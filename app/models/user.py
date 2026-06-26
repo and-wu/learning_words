@@ -2,14 +2,18 @@ from datetime import datetime
 
 from sqlalchemy import BigInteger, Text, DateTime, Boolean, func, String, text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.database.base import Base
 from app.enums.user_role import UserRole
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.session import Session
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(
         BigInteger,
@@ -62,5 +66,10 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        server_default=text('true')
+        server_default=text("true")
+    )
+
+    sessions: Mapped[list["Session"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
