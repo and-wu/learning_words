@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Alembic cache
+*.pyc
+
+# Environment
+.env
+
+# Logs
+*.log
+
+# Flutter
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
