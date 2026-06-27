@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
+
 from app.routers.auth import router as auth_router
 app = FastAPI(
     title="Learning Words API",

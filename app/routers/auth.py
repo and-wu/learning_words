@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.repositories.session_repository import SessionRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import RegisterRequest
+from app.schemas.auth import RegisterRequest, LoginRequest
+from app.schemas.user import UserResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter(
@@ -11,19 +13,34 @@ router = APIRouter(
     tags=["Authentication"],
 )
 
-@router.post("/register")
-def register(
-    data: RegisterRequest,
-    db: Session = Depends(get_db),
-):
+@router.post("/register", response_model=UserResponse)
+def register(data: RegisterRequest,db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
+    session_repository = SessionRepository(db)
 
-    auth_service = AuthService(user_repository)
+    auth_service = AuthService(user_repository=user_repository,
+                               session_repository=session_repository)
 
-    user = auth_service.register(data)
+    return auth_service.register(data)
+
+@router.post("/login")
+def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    user_repository = UserRepository(db)
+    session_repository = SessionRepository(db)
+
+    auth_service = AuthService(user_repository=user_repository,
+                               session_repository=session_repository)
+
+    session = auth_service.login(data)
+
+    response.set_cookie(
+        key="session_token",
+        value=session.session_token,
+        httponly=True,
+        max_age=60 * 60 * 24 * 30,
+    )
 
     return {
-        "id": user.id,
-        "email": user.email,
-        "login": user.login,
+        "message": "Login successful",
     }
+

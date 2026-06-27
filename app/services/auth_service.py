@@ -1,21 +1,68 @@
-from app.enums.user_role import UserRole
+from datetime import datetime, UTC, timedelta
+
+from fastapi import HTTPException, status
+
+from app.models.session import Session
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import RegisterRequest
+from app.repositories.session_repository import SessionRepository
+from app.schemas.auth import RegisterRequest, LoginRequest
 from app.services.password_service import PasswordService
+from app.services.token_service import TokenService
+
 
 class AuthService:
-    def __init__(self, user_repository: UserRepository):
+    def __init__(
+            self,
+            user_repository: UserRepository,
+            session_repository: SessionRepository,
+    ):
         self.user_repository = user_repository
+        self.session_repository = session_repository
+
+    def login(self, data: LoginRequest) -> Session:
+
+        user = self.user_repository.get_by_login(data.login)
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid login or password",
+            )
+
+        if not PasswordService.verify_password(
+                data.password,
+                user.password_hash,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid login or password",
+            )
+
+        token = TokenService.generate_session_token()
+
+        session = Session(
+            user_id=user.id,
+            session_token=token,
+            expires_at=datetime.now(UTC) + timedelta(days=30),
+        )
+
+        return self.session_repository.create(session)
 
     def register(self, data: RegisterRequest) -> User:
         email = str(data.email).lower()
 
         if self.user_repository.get_by_email(email):
-            raise ValueError("Email already exists")
+            raise HTTPException(
+                status_code=409,
+                detail="Email already exists",
+            )
 
         if self.user_repository.get_by_login(data.login):
-            raise ValueError("Login already exists")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Login already exists",
+            )
 
         password_hash = PasswordService.hash_password(
             data.password
