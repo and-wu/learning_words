@@ -77,3 +77,17 @@ class AuthService:
         )
 
         return self.user_repository.create(user)
+
+    def logout(
+            self,
+            session_token: str,
+    ) -> None:
+        session = self.session_repository.get_by_token(session_token)
+
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+            )
+
+        self.session_repository.delete(session)

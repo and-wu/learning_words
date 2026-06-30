@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Cookie
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -49,3 +49,27 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
 @router.get("/me",response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/logout")
+def logout(
+    response: Response,
+    session_token: str | None = Cookie(default=None),
+    db: Session = Depends(get_db),
+):
+    user_repository = UserRepository(db)
+    session_repository = SessionRepository(db)
+
+    auth_service = AuthService(
+        user_repository=user_repository,
+        session_repository=session_repository,
+    )
+
+    auth_service.logout(session_token)
+
+    response.delete_cookie("session_token")
+
+    return {
+        "message": "Logout successful",
+    }
+
+
