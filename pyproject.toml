@@ -6,5 +6,6 @@ requires-python = ">=3.13"
 dependencies = [
     "bcrypt>=5.0.0",
     "pydantic[email]>=2.13.4",
+    "sa>=0.0.4",
     "sqlalchemy>=2.0.51",
 ]

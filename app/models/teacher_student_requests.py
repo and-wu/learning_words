@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import sqlalchemy as sa
 from sqlalchemy import BigInteger, ForeignKey, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,7 +11,7 @@ from app.enums.request_type import RequestType
 from sqlalchemy import Enum as SQLEnum
 
 
-class TeacherStudentRequest(Base):
+class TeacherStudentRequests(Base):
     __tablename__ = "teacher_student_requests"
 
     id: Mapped[int] = mapped_column(
@@ -23,20 +24,23 @@ class TeacherStudentRequest(Base):
         BigInteger,
         ForeignKey("users.id",
                    ondelete="CASCADE"),
-        nullable = False
+        nullable = False,
+        index=True
     )
 
     to_user_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("users.id",
                    ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+        index=True
     )
 
     request_type: Mapped[RequestType] = mapped_column(
         SQLEnum(
             RequestType,
-            name="request_type",
+            values_callable=lambda enum: [e.value for e in enum],
+            name="request_type"
         ),
         nullable=False
     )
@@ -44,14 +48,18 @@ class TeacherStudentRequest(Base):
     status: Mapped[RequestStatus] = mapped_column(
         SQLEnum(
             RequestStatus,
-            name="request_status",
+            values_callable=lambda enum: [e.value for e in enum],
+            name="request_status"
         ),
-        server_default = RequestStatus.PENDING.value
+        nullable = False,
+        server_default = sa.text("'pending'"),
+        default=RequestStatus.PENDING
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=func.now()
+        server_default=func.now(),
+        nullable = False
     )
 
     processed_at: Mapped[datetime] = mapped_column(

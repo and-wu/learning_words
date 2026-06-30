@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, ForeignKey, func, DateTime, Boolean, text, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, func, DateTime, Boolean, text, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
 
 
-class TeacherStudent(Base):
+class TeacherStudents(Base):
     __tablename__ = "teacher_students"
 
     id: Mapped[int] = mapped_column(
@@ -19,14 +19,16 @@ class TeacherStudent(Base):
         BigInteger,
         ForeignKey("users.id",
                    ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+        index=True
     )
 
     student_id: Mapped[int] = mapped_column(
         BigInteger,
         ForeignKey("users.id",
                    ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+        index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -42,8 +44,10 @@ class TeacherStudent(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint(
-            "teacher_id",
-            "student_id",
-        ),
+        UniqueConstraint("teacher_id", "student_id"),
+
+        # 👇 ДОПОЛНИТЕЛЬНО: можно добавить составной индекс
+        # если часто ищешь пары teacher+student
+        Index("ix_teacher_students_teacher_id", "teacher_id"),
+        Index("ix_teacher_students_student_id", "student_id"),
     )
