@@ -181,12 +181,34 @@ class TeacherStudentRequestService:
         request.status = RequestStatus.ACCEPTED
         request.processed_at = datetime.now(UTC)
 
-        self.teacher_student_request_repository.update(
-            request,
-        )
+        self.teacher_student_request_repository.update(request)
 
+    def reject(self, current_user: User, request_id: int) -> None:
 
+        request = self.teacher_student_request_repository.get_by_id(request_id)
 
+        if request is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Request not found",
+            )
+
+        if request.status != RequestStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Request has already been processed",
+            )
+
+        if request.to_user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot reject this request",
+            )
+
+        request.status = RequestStatus.REJECTED
+        request.processed_at = datetime.now(UTC)
+
+        self.teacher_student_request_repository.update(request)
 
 
 
