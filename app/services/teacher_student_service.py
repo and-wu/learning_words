@@ -1,4 +1,4 @@
-from sqlalchemy.orm import relationship
+from fastapi import HTTPException, status
 
 from app.models.user import User
 from app.repositories.teacher_student_repository import TeacherStudentRepository
@@ -49,3 +49,40 @@ class TeacherStudentService:
                 teachers.append(teacher)
 
         return teachers
+
+    def deactivate(
+            self,
+            current_user: User,
+            relationship_id: int,
+    ) -> None:
+
+        relationship = self.teacher_student_repository.get_by_id(
+            relationship_id,
+        )
+
+        if relationship is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Relationship not found",
+            )
+
+        if not relationship.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Relationship is already inactive",
+            )
+
+        if (
+                relationship.teacher_id != current_user.id
+                and relationship.student_id != current_user.id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot deactivate this relationship",
+            )
+
+        relationship.is_active = False
+
+        self.teacher_student_repository.update(
+            relationship,
+        )

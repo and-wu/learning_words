@@ -51,3 +51,20 @@ class TeacherStudentRepository:
 
         return list(self.db.scalars(stmt))
 
+    def get_by_id(self, relationship_id: int) -> TeacherStudents | None:
+        stmt = (
+            select(TeacherStudents)
+            .where(
+                TeacherStudents.id == relationship_id,
+            )
+        )
+
+        return self.db.scalar(stmt)
+
+    def update(self, relationship: TeacherStudents) -> TeacherStudents:
+        self.db.add(relationship)
+        self.db.commit()
+        self.db.refresh(relationship)
+
+        return relationship
+

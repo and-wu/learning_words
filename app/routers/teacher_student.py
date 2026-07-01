@@ -43,3 +43,26 @@ def get_teachers(
     )
 
     return service.get_teachers(current_user)
+
+@router.patch("/{relationship_id}/deactivate")
+def deactivate(
+    relationship_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_repository = UserRepository(db=db)
+    teacher_student_repository = TeacherStudentRepository(db=db)
+
+    service = TeacherStudentService(
+        user_repository=user_repository,
+        teacher_student_repository=teacher_student_repository,
+    )
+
+    service.deactivate(
+        current_user=current_user,
+        relationship_id=relationship_id,
+    )
+
+    return {
+        "message": "Relationship deactivated",
+    }
