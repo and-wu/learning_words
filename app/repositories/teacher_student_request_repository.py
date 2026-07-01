@@ -48,6 +48,32 @@ class TeacherStudentRequestRepository:
 
         return self.db.scalar(stmt)
 
+    def get_incoming(self, user_id: int) -> list[TeacherStudentRequest]:
+        stmt = (
+            select(TeacherStudentRequest)
+            .where(
+                TeacherStudentRequest.to_user_id == user_id,
+            )
+            .order_by(
+                TeacherStudentRequest.created_at.desc(),
+            )
+        )
+
+        return list(self.db.scalar(stmt).all())
+
+    def get_outgoing(self, user_id: int) -> list[TeacherStudentRequest]:
+        stmt = (
+            select(TeacherStudentRequest)
+            .where(
+                TeacherStudentRequest.from_user_id == user_id,
+            )
+            .order_by(
+                TeacherStudentRequest.created_at.desc(),
+            )
+        )
+
+        return list(self.db.scalar(stmt))
+
     def update(self, request: TeacherStudentRequest) -> TeacherStudentRequest:
 
         self.db.commit()

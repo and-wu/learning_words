@@ -113,7 +113,17 @@ class TeacherStudentRequestService:
 
         return self.teacher_student_request_repository.create(request)
 
+    def get_incoming(
+        self,
+        current_user: User,
+    ) -> list[TeacherStudentRequest]:
+        return self.teacher_student_request_repository.get_incoming(current_user.id)
 
+    def get_outgoing(
+        self,
+        current_user: User,
+    ) -> list[TeacherStudentRequest]:
+        return self.teacher_student_request_repository.get_outgoing(current_user.id)
 
 
 

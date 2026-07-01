@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
+from app.repositories import teacher_student_request_repository
 from app.repositories.teacher_student_repository import TeacherStudentRepository
 from app.repositories.teacher_student_request_repository import (
     TeacherStudentRequestRepository,
@@ -40,5 +41,34 @@ def create_request(
 
     return service.create(current_user=current_user, data=data)
 
+@router.get("/request/incoming")
+def incoming(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+):
+    user_repository = UserRepository(db=db)
+    teacher_student_repository = TeacherStudentRepository(db=db)
+    teacher_student_request_repository = TeacherStudentRequestRepository(db=db)
+
+    service = TeacherStudentRequestService(user_repository=user_repository,
+                                           teacher_student_repository=teacher_student_repository,
+                                           teacher_student_request_repository=teacher_student_request_repository)
+
+    return service.get_incoming(current_user=current_user)
+
+@router.get("/request/outgoing")
+def outgoing(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db),
+):
+    user_repository = UserRepository(db=db)
+    teacher_student_repository = TeacherStudentRepository(db=db)
+    teacher_student_request_repository = TeacherStudentRequestRepository(db=db)
+
+    service = TeacherStudentRequestService(user_repository=user_repository,
+                                           teacher_student_repository=teacher_student_repository,
+                                           teacher_student_request_repository=teacher_student_request_repository)
+
+    return service.get_outgoing(current_user=current_user)
 
 
