@@ -41,7 +41,7 @@ def create_request(
 
     return service.create(current_user=current_user, data=data)
 
-@router.get("/request/incoming")
+@router.get("/incoming")
 def incoming(
         current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db),
@@ -56,7 +56,7 @@ def incoming(
 
     return service.get_incoming(current_user=current_user)
 
-@router.get("/request/outgoing")
+@router.get("/outgoing")
 def outgoing(
         current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db),
@@ -71,4 +71,29 @@ def outgoing(
 
     return service.get_outgoing(current_user=current_user)
 
+
+@router.post("/{request_id}/accept")
+def accept(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_repository = UserRepository(db)
+    teacher_student_repository = TeacherStudentRepository(db)
+    teacher_student_request_repository = TeacherStudentRequestRepository(db)
+
+    service = TeacherStudentRequestService(
+        user_repository=user_repository,
+        teacher_student_repository=teacher_student_repository,
+        teacher_student_request_repository=teacher_student_request_repository,
+    )
+
+    service.accept(
+        current_user=current_user,
+        request_id=request_id,
+    )
+
+    return {
+        "message": "Request accepted",
+    }
 
