@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 from app.enums.request_status import RequestStatus
 from app.enums.request_type import RequestType
 from app.enums.user_role import UserRole
-from app.models.teacher_student_requests import TeacherStudentRequests
+from app.models.teacher_student_requests import TeacherStudentRequest
 from app.models.user import User
 from app.schemas.teacher_student_request import (
     CreateTeacherStudentRequest,
@@ -29,7 +29,7 @@ class TeacherStudentRequestService:
 
     def create(self, current_user: User,
             data: CreateTeacherStudentRequest,
-    ) -> TeacherStudentRequests:
+    ) -> TeacherStudentRequest:
 
         if current_user.id == data.to_user_id:
             raise HTTPException(
@@ -91,9 +91,11 @@ class TeacherStudentRequestService:
                 detail="Teacher-student relationship already exists",
             )
 
-        pending_request = self.teacher_student_request_repository.get_pending(
-            from_user_id=current_user.id,
-            to_user_id=target_user.id,
+        pending_request = (
+            self.teacher_student_request_repository.get_pending_between_users(
+                user1_id=current_user.id,
+                user2_id=target_user.id,
+            )
         )
 
         if pending_request is not None:
@@ -102,7 +104,7 @@ class TeacherStudentRequestService:
                 detail="Pending request already exists",
             )
 
-        request = TeacherStudentRequests(
+        request = TeacherStudentRequest(
             from_user_id=current_user.id,
             to_user_id=target_user.id,
             request_type=data.request_type,

@@ -11,7 +11,7 @@ from app.enums.request_type import RequestType
 from sqlalchemy import Enum as SQLEnum
 
 
-class TeacherStudentRequests(Base):
+class TeacherStudentRequest(Base):
     __tablename__ = "teacher_student_requests"
 
     id: Mapped[int] = mapped_column(
