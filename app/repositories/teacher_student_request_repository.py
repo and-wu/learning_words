@@ -59,7 +59,7 @@ class TeacherStudentRequestRepository:
             )
         )
 
-        return list(self.db.scalar(stmt).all())
+        return list(self.db.scalars(stmt).all())
 
     def get_outgoing(self, user_id: int) -> list[TeacherStudentRequest]:
         stmt = (
@@ -72,7 +72,7 @@ class TeacherStudentRequestRepository:
             )
         )
 
-        return list(self.db.scalar(stmt))
+        return list(self.db.scalars(stmt))
 
     def update(self, request: TeacherStudentRequest) -> TeacherStudentRequest:
 

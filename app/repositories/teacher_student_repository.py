@@ -29,4 +29,25 @@ class TeacherStudentRepository:
 
         return teacher_student is not None
 
+    def get_students(self, teacher_id: int, ) -> list[TeacherStudents]:
+        stmt = (
+            select(TeacherStudents)
+            .where(
+                TeacherStudents.teacher_id == teacher_id,
+                TeacherStudents.is_active.is_(True),
+            )
+        )
+
+        return self.db.scalars(stmt).all()
+
+    def get_teachers(self, student_id: int) -> list[TeacherStudents]:
+        stmt = (
+            select(TeacherStudents)
+            .where(
+                TeacherStudents.student_id == student_id,
+                TeacherStudents.is_active.is_(True),
+            )
+        )
+
+        return list(self.db.scalars(stmt))
 
