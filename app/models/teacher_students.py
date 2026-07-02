@@ -9,6 +9,15 @@ from app.database.base import Base
 class TeacherStudents(Base):
     __tablename__ = "teacher_students"
 
+    __table_args__ = (
+        UniqueConstraint("teacher_id", "student_id"),
+
+        # 👇 ДОПОЛНИТЕЛЬНО: можно добавить составной индекс
+        # если часто ищешь пары teacher+student
+        Index("ix_teacher_students_teacher_id", "teacher_id"),
+        Index("ix_teacher_students_student_id", "student_id"),
+    )
+
     id: Mapped[int] = mapped_column(
         BigInteger,
         primary_key=True,
@@ -43,11 +52,3 @@ class TeacherStudents(Base):
         server_default=text("true")
     )
 
-    __table_args__ = (
-        UniqueConstraint("teacher_id", "student_id"),
-
-        # 👇 ДОПОЛНИТЕЛЬНО: можно добавить составной индекс
-        # если часто ищешь пары teacher+student
-        Index("ix_teacher_students_teacher_id", "teacher_id"),
-        Index("ix_teacher_students_student_id", "student_id"),
-    )
