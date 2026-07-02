@@ -1,10 +1,11 @@
 [project]
 name = "learning-words"
 version = "0.1.0"
-description = "Add your description here"
+description = "Backend API for learning Korean vocabulary with teacher-student collaboration, spaced repetition, and interactive exercises."
 requires-python = ">=3.13"
 dependencies = [
     "bcrypt>=5.0.0",
+    "pydantic-settings>=2.14.2",
     "pydantic[email]>=2.13.4",
     "sa>=0.0.4",
     "sqlalchemy>=2.0.51",
