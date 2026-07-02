@@ -9,9 +9,5 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
 
-    SECRET_KEY: str
-
-    SESSION_EXPIRE_DAYS: int = 30
-
 
 settings = Settings()

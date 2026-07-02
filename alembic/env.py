@@ -9,11 +9,11 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-from app.database.config import DATABASE_URL
+from app.config import settings
 
 config.set_main_option(
     "sqlalchemy.url",
-    DATABASE_URL,
+    settings.DATABASE_URL,
 )
 
 # Interpret the config file for Python logging.
