@@ -84,15 +84,29 @@ class TeacherStudentRequestService:
             teacher_id = target_user.id
             student_id = current_user.id
 
+        relationship = self.teacher_student_repository.get_by_users(
+            teacher_id=teacher_id,
+            student_id=student_id,
+        )
 
-        if self.teacher_student_repository.exists(
+        if relationship is None:
+            relationship = TeacherStudents(
                 teacher_id=teacher_id,
                 student_id=student_id,
-        ):
+            )
+
+            self.teacher_student_repository.create(relationship)
+
+        elif relationship.is_active:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Teacher-student relationship already exists",
+                detail="Relationship already exists",
             )
+
+        else:
+            relationship.is_active = True
+
+            self.teacher_student_repository.update(relationship)
 
         pending_request = (
             self.teacher_student_request_repository.get_pending_between_users(
@@ -160,23 +174,28 @@ class TeacherStudentRequestService:
             teacher_id = request.to_user_id
             student_id = request.from_user_id
 
-        if self.teacher_student_repository.exists(
-                teacher_id=teacher_id,
-                student_id=student_id,
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Relationship already exists",
-            )
 
-        relationship = TeacherStudents(
+        relationship = self.teacher_student_repository.get_by_users(
             teacher_id=teacher_id,
             student_id=student_id,
         )
 
-        self.teacher_student_repository.create(
-            relationship,
-        )
+        if relationship is None:
+            relationship = TeacherStudents(
+                teacher_id=teacher_id,
+                student_id=student_id,
+            )
+
+            self.teacher_student_repository.create(
+                relationship,
+            )
+
+        elif not relationship.is_active:
+            relationship.is_active = True
+
+            self.teacher_student_repository.update(
+                relationship,
+            )
 
         request.status = RequestStatus.ACCEPTED
         request.processed_at = datetime.now(UTC)

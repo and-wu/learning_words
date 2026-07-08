@@ -29,6 +29,18 @@ class TeacherStudentRepository:
 
         return teacher_student is not None
 
+    def get_by_users(self, teacher_id: int, student_id: int) -> TeacherStudents | None:
+
+        stmt = (
+            select(TeacherStudents)
+            .where(
+                TeacherStudents.teacher_id == teacher_id,
+                TeacherStudents.student_id == student_id,
+            )
+        )
+
+        return self.db.scalar(stmt)
+
     def get_students(self, teacher_id: int, ) -> list[TeacherStudents]:
         stmt = (
             select(TeacherStudents)
