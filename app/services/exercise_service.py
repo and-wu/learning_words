@@ -30,7 +30,7 @@ class ExerciseService:
             student_word_id=data.student_word_id,
         )
 
-        # Получаем слово из словаря
+        # Получаем слово из словаря ученика
         word = self._get_word(student_word.word_id)
 
         # Проверяем правильность ответа ученика
@@ -71,6 +71,7 @@ class ExerciseService:
 
         return student_word
 
+    # Получаем слово из словаря ученика
     def _get_word(self, word_id: int) -> Word:
         # Получаем слово, связанное с записью ученика
         word = self.word_repository.get_by_id(word_id)
