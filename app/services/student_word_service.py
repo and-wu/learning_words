@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from app.enums.source_type import SourceType
 from app.enums.user_role import UserRole
 from app.models import StudentWord, User
-from app.repositories.student_words_repository import StudentWordRepository
+from app.repositories.student_word_repository import StudentWordRepository
 from app.repositories.teacher_student_repository import TeacherStudentRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.word_repository import WordRepository

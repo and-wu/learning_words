@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Response, Cookie
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.dependencies.services import get_auth_service
 from app.models.user import User
 from app.repositories.session_repository import SessionRepository
 from app.repositories.user_repository import UserRepository
@@ -16,24 +17,14 @@ router = APIRouter(
 )
 
 @router.post("/register", response_model=UserResponse)
-def register(data: RegisterRequest,db: Session = Depends(get_db)):
-    user_repository = UserRepository(db)
-    session_repository = SessionRepository(db)
+def register(data: RegisterRequest, service: AuthService = Depends(get_auth_service)):
 
-    auth_service = AuthService(user_repository=user_repository,
-                               session_repository=session_repository)
-
-    return auth_service.register(data)
+    return service.register(data)
 
 @router.post("/login")
-def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    user_repository = UserRepository(db)
-    session_repository = SessionRepository(db)
+def login(data: LoginRequest, response: Response, service: AuthService = Depends(get_auth_service)):
 
-    auth_service = AuthService(user_repository=user_repository,
-                               session_repository=session_repository)
-
-    session = auth_service.login(data)
+    session = service.login(data)
 
     response.set_cookie(
         key="session_token",
@@ -54,17 +45,10 @@ def me(current_user: User = Depends(get_current_user)):
 def logout(
     response: Response,
     session_token: str | None = Cookie(default=None),
-    db: Session = Depends(get_db),
+    service: AuthService = Depends(get_auth_service),
 ):
-    user_repository = UserRepository(db)
-    session_repository = SessionRepository(db)
 
-    auth_service = AuthService(
-        user_repository=user_repository,
-        session_repository=session_repository,
-    )
-
-    auth_service.logout(session_token)
+    service.logout(session_token)
 
     response.delete_cookie("session_token")
 

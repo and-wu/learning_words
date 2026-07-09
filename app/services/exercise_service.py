@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from app.enums.exercise_type import ExerciseType
 from app.models import ExerciseResult, User, StudentWord, Word
 from app.repositories.exercise_result_repository import ExerciseResultRepository
-from app.repositories.student_words_repository import StudentWordRepository
+from app.repositories.student_word_repository import StudentWordRepository
 from app.repositories.word_repository import WordRepository
 from app.schemas.exercises import SubmitExerciseRequest
 

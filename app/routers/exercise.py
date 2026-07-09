@@ -18,10 +18,10 @@ router = APIRouter(
 def submit_answer(
     data: SubmitExerciseRequest,
     current_user: User = Depends(get_current_user),
-    exercise_service: ExerciseService = Depends(get_exercise_service),
+    service: ExerciseService = Depends(get_exercise_service),
 ):
 
-    return exercise_service.submit_answer(
+    return service.submit_answer(
         current_user=current_user,
         data=data,
     )

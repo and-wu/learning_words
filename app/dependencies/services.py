@@ -3,24 +3,48 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 
+from app.repositories.session_repository import SessionRepository
+from app.repositories.teacher_student_request_repository import TeacherStudentRequestRepository
 from app.repositories.word_repository import WordRepository
-from app.repositories.student_words_repository import StudentWordRepository
+from app.repositories.student_word_repository import StudentWordRepository
 from app.repositories.exercise_result_repository import ExerciseResultRepository
 from app.repositories.teacher_student_repository import TeacherStudentRepository
 from app.repositories.user_repository import UserRepository
 
+from app.services.auth_service import AuthService
+from app.services.teacher_student_request_service import TeacherStudentRequestService
 from app.services.word_service import WordService
 from app.services.student_word_service import StudentWordService
 from app.services.exercise_service import ExerciseService
 from app.services.teacher_student_service import TeacherStudentService
 
-def get_word_service(
+def get_auth_service(
     db: Session = Depends(get_db),
-) -> WordService:
+) -> AuthService:
+
+    user_repository = UserRepository(db)
+    session_repository = SessionRepository(db)
+
+    return AuthService(
+        user_repository=user_repository,
+        session_repository=session_repository,
+    )
+
+def get_student_word_service(db: Session = Depends(get_db)) -> StudentWordService:
+
+    return StudentWordService(
+        user_repository=UserRepository(db),
+        word_repository=WordRepository(db),
+        teacher_student_repository=TeacherStudentRepository(db),
+        student_word_repository=StudentWordRepository(db),
+    )
+
+def get_word_service(db: Session = Depends(get_db)) -> WordService:
 
     return WordService(
         word_repository=WordRepository(db),
     )
+
 
 def get_teacher_student_service(
     db: Session = Depends(get_db),
@@ -29,6 +53,16 @@ def get_teacher_student_service(
     return TeacherStudentService(
         user_repository=UserRepository(db),
         teacher_student_repository=TeacherStudentRepository(db),
+    )
+
+def get_teacher_student_request_service(
+    db: Session = Depends(get_db),
+) -> TeacherStudentRequestService:
+
+    return TeacherStudentRequestService(
+        user_repository=UserRepository(db),
+        teacher_student_repository=TeacherStudentRepository(db),
+        teacher_student_request_repository=TeacherStudentRequestRepository(db),
     )
 
 def get_exercise_service(

@@ -1,16 +1,10 @@
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
-from app.database.session import get_db
 from app.dependencies.auth import get_current_user
+from app.dependencies.services import get_teacher_student_request_service
 from app.models.user import User
-from app.repositories import teacher_student_request_repository
-from app.repositories.teacher_student_repository import TeacherStudentRepository
-from app.repositories.teacher_student_request_repository import (
-    TeacherStudentRequestRepository,
-)
-from app.repositories.user_repository import UserRepository
+
 from app.schemas.teacher_student_request import (
     CreateTeacherStudentRequest,
 )
@@ -27,47 +21,30 @@ router = APIRouter(
 def create_request(
     data: CreateTeacherStudentRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    service: TeacherStudentRequestService = Depends(
+        get_teacher_student_request_service,
+    ),
 ):
-
-    user_repository = UserRepository(db=db)
-    teacher_student_repository = TeacherStudentRepository(db=db)
-    teacher_student_request_repository = TeacherStudentRequestRepository(db=db)
-
-    service = TeacherStudentRequestService(user_repository=user_repository,
-                                           teacher_student_repository=teacher_student_repository,
-                                           teacher_student_request_repository=teacher_student_request_repository)
-
 
     return service.create(current_user=current_user, data=data)
 
 @router.get("/incoming")
 def incoming(
         current_user: User = Depends(get_current_user),
-        db: Session = Depends(get_db),
+        service: TeacherStudentRequestService = Depends(
+            get_teacher_student_request_service,
+        ),
 ):
-    user_repository = UserRepository(db=db)
-    teacher_student_repository = TeacherStudentRepository(db=db)
-    teacher_student_request_repository = TeacherStudentRequestRepository(db=db)
-
-    service = TeacherStudentRequestService(user_repository=user_repository,
-                                           teacher_student_repository=teacher_student_repository,
-                                           teacher_student_request_repository=teacher_student_request_repository)
 
     return service.get_incoming(current_user=current_user)
 
 @router.get("/outgoing")
 def outgoing(
         current_user: User = Depends(get_current_user),
-        db: Session = Depends(get_db),
+        service: TeacherStudentRequestService = Depends(
+            get_teacher_student_request_service,
+        ),
 ):
-    user_repository = UserRepository(db=db)
-    teacher_student_repository = TeacherStudentRepository(db=db)
-    teacher_student_request_repository = TeacherStudentRequestRepository(db=db)
-
-    service = TeacherStudentRequestService(user_repository=user_repository,
-                                           teacher_student_repository=teacher_student_repository,
-                                           teacher_student_request_repository=teacher_student_request_repository)
 
     return service.get_outgoing(current_user=current_user)
 
@@ -76,17 +53,10 @@ def outgoing(
 def accept(
     request_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    service: TeacherStudentRequestService = Depends(
+        get_teacher_student_request_service,
+    ),
 ):
-    user_repository = UserRepository(db)
-    teacher_student_repository = TeacherStudentRepository(db)
-    teacher_student_request_repository = TeacherStudentRequestRepository(db)
-
-    service = TeacherStudentRequestService(
-        user_repository=user_repository,
-        teacher_student_repository=teacher_student_repository,
-        teacher_student_request_repository=teacher_student_request_repository,
-    )
 
     service.accept(
         current_user=current_user,
@@ -101,17 +71,10 @@ def accept(
 def reject(
     request_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    service: TeacherStudentRequestService = Depends(
+        get_teacher_student_request_service,
+    ),
 ):
-    user_repository = UserRepository(db)
-    teacher_student_repository = TeacherStudentRepository(db)
-    teacher_student_request_repository = TeacherStudentRequestRepository(db)
-
-    service = TeacherStudentRequestService(
-        user_repository=user_repository,
-        teacher_student_repository=teacher_student_repository,
-        teacher_student_request_repository=teacher_student_request_repository,
-    )
 
     service.reject(
         current_user=current_user,
