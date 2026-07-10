@@ -12,6 +12,7 @@ from app.repositories.teacher_student_repository import TeacherStudentRepository
 from app.repositories.user_repository import UserRepository
 
 from app.services.auth_service import AuthService
+from app.services.exercises.factory import ExerciseHandlerFactory
 from app.services.teacher_student_request_service import TeacherStudentRequestService
 from app.services.word_service import WordService
 from app.services.student_word_service import StudentWordService
@@ -67,11 +68,17 @@ def get_teacher_student_request_service(
 
 def get_exercise_service(
     db: Session = Depends(get_db),
-) -> ExerciseService:
+):
+
+    word_repository = WordRepository(db)
+
+    exercise_handler_factory = ExerciseHandlerFactory(
+        word_repository=word_repository,
+    )
 
     return ExerciseService(
         exercise_result_repository=ExerciseResultRepository(db),
         student_word_repository=StudentWordRepository(db),
-        word_repository=WordRepository(db),
+        word_repository=word_repository,
+        exercise_handler_factory=exercise_handler_factory,
     )
-
