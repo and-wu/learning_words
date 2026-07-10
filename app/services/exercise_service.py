@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from random import choice
+from random import choice, shuffle
 
 from fastapi import HTTPException, status
 
@@ -8,6 +8,7 @@ from app.models import ExerciseResult, User, StudentWord, Word
 from app.repositories.exercise_result_repository import ExerciseResultRepository
 from app.repositories.student_word_repository import StudentWordRepository
 from app.repositories.word_repository import WordRepository
+from app.schemas.exercise_types import ExerciseContent
 from app.schemas.exercises import SubmitExerciseRequest
 from app.schemas.next_exercise import NextExerciseResponse
 
@@ -44,7 +45,7 @@ class ExerciseService:
         exercise_type = self._choose_exercise_type()
 
         # Формируем вопрос
-        question = self._build_question(
+        content  = self._build_question(
             word=student_word.word,
             exercise_type=exercise_type,
         )
@@ -53,7 +54,8 @@ class ExerciseService:
         return NextExerciseResponse(
             student_word_id=student_word.id,
             exercise_type=exercise_type,
-            question=question,
+            question=content.question,
+            options=content.options,
         )
 
     def submit_answer(self, current_user: User, data: SubmitExerciseRequest) -> ExerciseResult:
@@ -120,16 +122,18 @@ class ExerciseService:
         return word
 
     # Проверяет правильность ответа ученика
-    def _check_answer(
-            self,
-            word: Word,
-            data: SubmitExerciseRequest,
-    ) -> bool:
+    def _check_answer(self, word: Word, data: SubmitExerciseRequest) -> bool:
 
-        # Проверяем упражнение "Корейский → Русский"
-        if data.exercise_type == ExerciseType.KO_TO_RU:
+        # Подготавливаем ответ ученика
+        response = data.response.strip()
+
+        # Проверяем упражнения, где ответом является русский перевод
+        if data.exercise_type in (
+                ExerciseType.KO_TO_RU,
+                ExerciseType.MATCH,
+        ):
             return (
-                    data.response.strip().lower()
+                    response.lower()
                     ==
                     word.translation.strip().lower()
             )
@@ -137,7 +141,7 @@ class ExerciseService:
         # Проверяем упражнение "Русский → Корейский"
         if data.exercise_type == ExerciseType.RU_TO_KO:
             return (
-                    data.response.strip()
+                    response
                     ==
                     word.korean.strip()
             )
@@ -145,7 +149,7 @@ class ExerciseService:
         # Остальные упражнения пока не реализованы
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Exercise type is not supported yet",
+            detail=f"Exercise type '{data.exercise_type.value}' is not supported yet",
         )
 
     # Создает запись о результате выполнения упражнения
@@ -223,17 +227,55 @@ class ExerciseService:
             [
                 ExerciseType.KO_TO_RU,
                 ExerciseType.RU_TO_KO,
+                ExerciseType.MATCH
             ]
         )
 
-    def _build_question(self, word: Word, exercise_type: ExerciseType) -> str:
+    # Сформировать вопрос для упражнения
+    def _build_question(self, word: Word, exercise_type: ExerciseType) -> ExerciseContent:
 
+        # Корейское слово → нужно выбрать русский перевод
         if exercise_type == ExerciseType.KO_TO_RU:
-            return word.korean
+            return ExerciseContent(
+                question=word.korean,
+            )
 
+        # Русский перевод → нужно написать корейское слово
         if exercise_type == ExerciseType.RU_TO_KO:
-            return word.translation
+            return ExerciseContent(
+                question=word.translation,
+            )
+
+        # Выбрать правильный перевод из нескольких вариантов
+        if exercise_type == ExerciseType.MATCH:
+            return ExerciseContent(
+                question=word.korean,
+                options=self._build_options(word),
+            )
 
         raise ValueError(
-            f"Unsupported exercise type: {exercise_type}"
+                f"Unsupported exercise type: {exercise_type}"
+            )
+
+    # Сформировать варианты ответа для упражнения Match
+    def _build_options(self, word: Word) -> list[str]:
+
+        # Получаем три случайных неправильных слова
+        random_words = self.word_repository.get_random_except(
+            word_id=word.id,
+            limit=3,
         )
+
+        # Добавляем правильный ответ
+        options = [word.translation]
+
+        # Добавляем неправильные варианты
+        options.extend(
+            random_word.translation
+            for random_word in random_words
+        )
+
+        # Перемешиваем варианты
+        shuffle(options)
+
+        return options

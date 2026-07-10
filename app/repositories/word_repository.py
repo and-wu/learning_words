@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.models import Word
@@ -38,6 +38,21 @@ class WordRepository:
         )
 
         return list(self.db.scalars(stmt))
+
+    # Получить случайные слова, кроме текущего
+    def get_random_except(self, word_id: int, limit: int) -> list[Word]:
+        stmt = (
+            select(Word)
+            .where(
+                Word.id != word_id,
+            )
+            .order_by(
+                func.random(),
+            )
+            .limit(limit)
+        )
+
+        return list(self.db.scalars(stmt).all())
 
     def update(self, word: Word) -> Word:
         self.db.add(word)
