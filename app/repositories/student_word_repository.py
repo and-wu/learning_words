@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.student_words import StudentWord
@@ -74,3 +74,37 @@ class StudentWordRepository:
         )
 
         return list(self.db.scalars(stmt).all())
+
+    # Возвращает количество слов, назначенных ученику
+    def count_by_student(self, student_id: int) -> int:
+        stmt = (
+            select(func.count(StudentWord.id))
+            .where(
+                StudentWord.student_id == student_id,
+            )
+        )
+
+        return self.db.scalar(stmt) or 0
+
+    # Возвращает количество слов, которые нужно повторить
+    def count_due_by_student(self, student_id: int) -> int:
+        stmt = (
+            select(func.count(StudentWord.id))
+            .where(
+                StudentWord.student_id == student_id,
+                StudentWord.next_review_at <= datetime.now(UTC),
+            )
+        )
+
+        return self.db.scalar(stmt) or 0
+
+    # Возвращает максимальную серию правильных ответов ученика
+    def get_max_streak(self, student_id: int ) -> int:
+        stmt = (
+            select(func.max(StudentWord.correct_streak))
+            .where(
+                StudentWord.student_id == student_id,
+            )
+        )
+
+        return self.db.scalar(stmt) or 0

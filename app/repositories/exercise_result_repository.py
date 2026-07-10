@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.models import ExerciseResult
@@ -65,3 +65,40 @@ class ExerciseResultRepository:
         )
 
         return list(self.db.scalars(stmt))
+
+    # Возвращает общее количество выполненных упражнений ученика
+    def count_by_user(self, user_id: int) -> int:
+        stmt = (
+            select(func.count(ExerciseResult.id))
+            .where(
+                ExerciseResult.user_id == user_id,
+            )
+        )
+
+        return self.db.scalar(stmt) or 0
+
+    # Возвращает количество правильных ответов ученика
+    def count_correct_by_user(self, user_id: int) -> int:
+        stmt = (
+            select(func.count(ExerciseResult.id))
+            .where(
+                ExerciseResult.user_id == user_id,
+                ExerciseResult.correct.is_(True),
+            )
+        )
+
+        return self.db.scalar(stmt) or 0
+
+    # Возвращает количество неправильных ответов ученика
+    def count_wrong_by_user(self, user_id: int) -> int:
+        stmt = (
+            select(func.count(ExerciseResult.id))
+            .where(
+                ExerciseResult.user_id == user_id,
+                ExerciseResult.correct.is_(False),
+            )
+        )
+
+        return self.db.scalar(stmt) or 0
+
+    

@@ -13,6 +13,7 @@ from app.repositories.user_repository import UserRepository
 
 from app.services.auth_service import AuthService
 from app.services.exercises.factory import ExerciseHandlerFactory
+from app.services.student_statistics_service import StudentStatisticsService
 from app.services.teacher_student_request_service import TeacherStudentRequestService
 from app.services.word_service import WordService
 from app.services.student_word_service import StudentWordService
@@ -81,4 +82,14 @@ def get_exercise_service(
         student_word_repository=StudentWordRepository(db),
         word_repository=word_repository,
         exercise_handler_factory=exercise_handler_factory,
+    )
+
+# Создает сервис статистики ученика
+def get_student_statistics_service(
+    db: Session = Depends(get_db),
+) -> StudentStatisticsService:
+
+    return StudentStatisticsService(
+        student_word_repository=StudentWordRepository(db),
+        exercise_result_repository=ExerciseResultRepository(db),
     )
