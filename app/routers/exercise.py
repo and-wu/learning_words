@@ -7,6 +7,7 @@ from app.schemas.exercises import (
     ExerciseResultResponse,
     SubmitExerciseRequest,
 )
+from app.schemas.next_exercise import NextExerciseResponse
 from app.services.exercise_service import ExerciseService
 
 router = APIRouter(
@@ -25,3 +26,11 @@ def submit_answer(
         current_user=current_user,
         data=data,
     )
+
+@router.get("/next", response_model=NextExerciseResponse, status_code=status.HTTP_200_OK)
+def get_next_exercise(
+        current_user: User = Depends(get_current_user),
+        service: ExerciseService = Depends(get_exercise_service),
+):
+
+    return service.get_next_exercise(current_user=current_user)

@@ -10,7 +10,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 from app.enums.source_type import SourceType
@@ -108,4 +108,9 @@ class StudentWord(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+
+    # Связь с таблицей слов
+    word: Mapped["Word"] = relationship(
+        back_populates="student_words",
     )

@@ -7,7 +7,7 @@ from sqlalchemy import (
     Text,
     func, String,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 
@@ -62,4 +62,9 @@ class Word(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    # Все назначения этого слова ученикам
+    student_words: Mapped[list["StudentWord"]] = relationship(
+        back_populates="word",
     )

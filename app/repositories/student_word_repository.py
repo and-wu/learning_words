@@ -1,5 +1,7 @@
+from datetime import datetime, UTC
+
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.student_words import StudentWord
 
@@ -57,3 +59,18 @@ class StudentWordRepository:
     def delete(self, student_word: StudentWord) -> None:
         self.db.delete(student_word)
         self.db.commit()
+
+    # Получить все слова, которые пора повторять
+    def get_due_words(self, student_id: int) -> list[StudentWord]:
+        stmt = (
+            select(StudentWord)
+            .options(
+                selectinload(StudentWord.word),
+            )
+            .where(
+                StudentWord.student_id == student_id,
+                StudentWord.next_review_at <= datetime.now(UTC),
+            )
+        )
+
+        return list(self.db.scalars(stmt).all())

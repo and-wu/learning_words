@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from random import choice
 
 from fastapi import HTTPException, status
 
@@ -8,6 +9,7 @@ from app.repositories.exercise_result_repository import ExerciseResultRepository
 from app.repositories.student_word_repository import StudentWordRepository
 from app.repositories.word_repository import WordRepository
 from app.schemas.exercises import SubmitExerciseRequest
+from app.schemas.next_exercise import NextExerciseResponse
 
 
 class ExerciseService:
@@ -21,6 +23,38 @@ class ExerciseService:
         self.exercise_result_repository = exercise_result_repository
         self.student_word_repository = student_word_repository
         self.word_repository = word_repository
+
+
+    def get_next_exercise(self, current_user: User) -> NextExerciseResponse:
+
+        # Получаем все слова, которые пора повторить
+        due_words = self.student_word_repository.get_due_words(current_user.id)
+
+        # Если повторять нечего
+        if not due_words:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No words available for review",
+            )
+
+        # Выбираем случайное слово
+        student_word = choice(due_words)
+
+        # Выбираем тип упражнения
+        exercise_type = self._choose_exercise_type()
+
+        # Формируем вопрос
+        question = self._build_question(
+            word=student_word.word,
+            exercise_type=exercise_type,
+        )
+
+        # Возвращаем упражнение
+        return NextExerciseResponse(
+            student_word_id=student_word.id,
+            exercise_type=exercise_type,
+            question=question,
+        )
 
     def submit_answer(self, current_user: User, data: SubmitExerciseRequest) -> ExerciseResult:
 
@@ -182,3 +216,24 @@ class ExerciseService:
             return 7
 
         return 14
+
+    def _choose_exercise_type(self) -> ExerciseType:
+
+        return choice(
+            [
+                ExerciseType.KO_TO_RU,
+                ExerciseType.RU_TO_KO,
+            ]
+        )
+
+    def _build_question(self, word: Word, exercise_type: ExerciseType) -> str:
+
+        if exercise_type == ExerciseType.KO_TO_RU:
+            return word.korean
+
+        if exercise_type == ExerciseType.RU_TO_KO:
+            return word.translation
+
+        raise ValueError(
+            f"Unsupported exercise type: {exercise_type}"
+        )
