@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.user import User
 from app.models.teacher_students import TeacherStudents
 
 
@@ -44,6 +45,22 @@ class TeacherStudentRepository:
     def get_students(self, teacher_id: int, ) -> list[TeacherStudents]:
         stmt = (
             select(TeacherStudents)
+            .where(
+                TeacherStudents.teacher_id == teacher_id,
+                TeacherStudents.is_active.is_(True),
+            )
+        )
+
+        return self.db.scalars(stmt).all()
+
+    # Возвращает пользователей-учеников конкретного преподавателя
+    def get_student_users(self, teacher_id: int) -> list[User]:
+        stmt = (
+            select(User)
+            .join(
+                TeacherStudents,
+                TeacherStudents.student_id == User.id,
+            )
             .where(
                 TeacherStudents.teacher_id == teacher_id,
                 TeacherStudents.is_active.is_(True),
