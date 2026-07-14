@@ -30,27 +30,157 @@ class TeacherStudentRequestService:
         self.teacher_student_repository = teacher_student_repository
         self.teacher_student_request_repository = teacher_student_request_repository
 
+    # Создает новую заявку на связь между преподавателем и учеником
     def create(self, current_user: User,
             data: CreateTeacherStudentRequest,
     ) -> TeacherStudentRequest:
 
-        if current_user.id == data.to_user_id:
+        # Получаем пользователя, которому отправляется заявка
+        target_user = self._get_target_user(current_user=current_user,
+                                            to_user_id=data.to_user_id)
+
+        # Проверяем соответствие ролей типу заявки
+        self._validate_roles(
+            current_user=current_user,
+            target_user=target_user,
+            request_type=data.request_type,
+        )
+
+        # Определяем преподавателя и ученика
+        teacher_id, student_id = self._resolve_users(
+            current_user=current_user,
+            target_user=target_user,
+            request_type=data.request_type,
+        )
+
+        # Проверяем, что связь уже не существует
+        self._validate_relationship(
+            teacher_id=teacher_id,
+            student_id=student_id,
+        )
+
+        # Проверяем отсутствие активной заявки
+        self._validate_pending_request(
+            from_user_id=current_user.id,
+            to_user_id=target_user.id,
+        )
+
+        # Создаем новую заявку
+        return self.teacher_student_request_repository.create(
+            TeacherStudentRequest(
+                from_user_id=current_user.id,
+                to_user_id=target_user.id,
+                request_type=data.request_type,
+                status=RequestStatus.PENDING,
+            )
+        )
+
+    # Возвращает входящие заявки пользователя
+    def get_incoming(
+        self,
+        current_user: User,
+    ) -> list[TeacherStudentRequest]:
+
+        return self.teacher_student_request_repository.get_incoming(current_user.id)
+
+    # Возвращает исходящие заявки пользователя
+    def get_outgoing(
+        self,
+        current_user: User,
+    ) -> list[TeacherStudentRequest]:
+
+        return self.teacher_student_request_repository.get_outgoing(current_user.id)
+
+    # Принимает заявку и создает связь преподаватель–ученик
+    def accept(self, current_user: User, request_id: int) -> None:
+
+        request = self._get_pending_request(
+            current_user=current_user,
+            request_id=request_id,
+        )
+
+        teacher_id, student_id = self._resolve_users_from_request(request)
+
+        relationship = self.teacher_student_repository.get_by_users(
+            teacher_id=teacher_id,
+            student_id=student_id,
+        )
+
+        # Если связи еще нет — создаем
+        if relationship is None:
+
+            self.teacher_student_repository.create(
+                TeacherStudents(
+                    teacher_id=teacher_id,
+                    student_id=student_id,
+                )
+            )
+
+        # Если связь была отключена — активируем снова
+        elif not relationship.is_active:
+
+            relationship.is_active = True
+
+            self.teacher_student_repository.update(
+                relationship,
+            )
+
+        # Помечаем заявку как принятую
+        request.status = RequestStatus.ACCEPTED
+        request.processed_at = datetime.now(UTC)
+
+        self.teacher_student_request_repository.update(request)
+
+    # Отклоняет заявку
+    def reject(self, current_user: User, request_id: int) -> None:
+
+        request = self._get_pending_request(
+            current_user=current_user,
+            request_id=request_id,
+        )
+
+        request.status = RequestStatus.REJECTED
+        request.processed_at = datetime.now(UTC)
+
+        self.teacher_student_request_repository.update(request)
+
+    # ------------------------------------------------------------------
+    # Private helpers
+    # ------------------------------------------------------------------
+
+    # Получает пользователя-получателя заявки
+    def _get_target_user(
+        self,
+        current_user: User,
+        to_user_id: int,
+    ) -> User:
+
+        if current_user.id == to_user_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You cannot send a request to yourself",
             )
 
-        target_user = self.user_repository.get_by_id(
-            data.to_user_id,
-        )
+        user = self.user_repository.get_by_id(to_user_id)
 
-        if target_user is None:
+        if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found",
             )
 
-        if data.request_type == RequestType.TEACHER_TO_STUDENT:
+        return user
+
+    # Проверяет корректность ролей участников заявки
+    def _validate_roles(
+        self,
+        current_user: User,
+        target_user: User,
+        request_type: RequestType,
+    ) -> None:
+
+        if request_type == RequestType.TEACHER_TO_STUDENT:
+
             if current_user.role != UserRole.teacher:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -63,7 +193,8 @@ class TeacherStudentRequestService:
                     detail="Target user must be a student",
                 )
 
-        elif data.request_type == RequestType.STUDENT_TO_TEACHER:
+        else:
+
             if current_user.role != UserRole.student:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -76,76 +207,61 @@ class TeacherStudentRequestService:
                     detail="Target user must be a teacher",
                 )
 
+    # Определяет id преподавателя и ученика
+    def _resolve_users(
+        self,
+        current_user: User,
+        target_user: User,
+        request_type: RequestType,
+    ) -> tuple[int, int]:
 
-        if data.request_type == RequestType.TEACHER_TO_STUDENT:
-            teacher_id = current_user.id
-            student_id = target_user.id
-        else:
-            teacher_id = target_user.id
-            student_id = current_user.id
+        if request_type == RequestType.TEACHER_TO_STUDENT:
+            return current_user.id, target_user.id
+
+        return target_user.id, current_user.id
+
+    # Проверяет существование активной связи
+    def _validate_relationship(
+        self,
+        teacher_id: int,
+        student_id: int,
+    ) -> None:
 
         relationship = self.teacher_student_repository.get_by_users(
             teacher_id=teacher_id,
             student_id=student_id,
         )
 
-        if relationship is None:
-            relationship = TeacherStudents(
-                teacher_id=teacher_id,
-                student_id=student_id,
-            )
-
-            self.teacher_student_repository.create(relationship)
-
-        elif relationship.is_active:
+        if relationship is not None and relationship.is_active:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Relationship already exists",
             )
 
-        else:
-            relationship.is_active = True
+    # Проверяет отсутствие активной заявки
+    def _validate_pending_request(
+        self,
+        from_user_id: int,
+        to_user_id: int,
+    ) -> None:
 
-            self.teacher_student_repository.update(relationship)
-
-        pending_request = (
-            self.teacher_student_request_repository.get_pending_between_users(
-                user1_id=current_user.id,
-                user2_id=target_user.id,
-            )
+        pending = self.teacher_student_request_repository.get_pending_between_users(
+            user1_id=from_user_id,
+            user2_id=to_user_id,
         )
 
-        if pending_request is not None:
+        if pending is not None:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Pending request already exists",
             )
 
-        request = TeacherStudentRequest(
-            from_user_id=current_user.id,
-            to_user_id=target_user.id,
-            request_type=data.request_type,
-            status=RequestStatus.PENDING,
-        )
-
-        return self.teacher_student_request_repository.create(request)
-
-    def get_incoming(
+    # Получает заявку и проверяет возможность обработки
+    def _get_pending_request(
         self,
         current_user: User,
-    ) -> list[TeacherStudentRequest]:
-
-        return self.teacher_student_request_repository.get_incoming(current_user.id)
-
-    def get_outgoing(
-        self,
-        current_user: User,
-    ) -> list[TeacherStudentRequest]:
-
-        return self.teacher_student_request_repository.get_outgoing(current_user.id)
-
-
-    def accept(self, current_user: User, request_id: int) -> None:
+        request_id: int,
+    ) -> TeacherStudentRequest:
 
         request = self.teacher_student_request_repository.get_by_id(request_id)
 
@@ -164,71 +280,20 @@ class TeacherStudentRequestService:
         if request.to_user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You cannot accept this request",
+                detail="You cannot process this request",
             )
+
+        return request
+
+    # Определяет преподавателя и ученика по заявке
+    def _resolve_users_from_request(
+        self,
+        request: TeacherStudentRequest,
+    ) -> tuple[int, int]:
 
         if request.request_type == RequestType.TEACHER_TO_STUDENT:
-            teacher_id = request.from_user_id
-            student_id = request.to_user_id
-        else:
-            teacher_id = request.to_user_id
-            student_id = request.from_user_id
+            return request.from_user_id, request.to_user_id
 
-
-        relationship = self.teacher_student_repository.get_by_users(
-            teacher_id=teacher_id,
-            student_id=student_id,
-        )
-
-        if relationship is None:
-            relationship = TeacherStudents(
-                teacher_id=teacher_id,
-                student_id=student_id,
-            )
-
-            self.teacher_student_repository.create(
-                relationship,
-            )
-
-        elif not relationship.is_active:
-            relationship.is_active = True
-
-            self.teacher_student_repository.update(
-                relationship,
-            )
-
-        request.status = RequestStatus.ACCEPTED
-        request.processed_at = datetime.now(UTC)
-
-        self.teacher_student_request_repository.update(request)
-
-    def reject(self, current_user: User, request_id: int) -> None:
-
-        request = self.teacher_student_request_repository.get_by_id(request_id)
-
-        if request is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Request not found",
-            )
-
-        if request.status != RequestStatus.PENDING:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Request has already been processed",
-            )
-
-        if request.to_user_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You cannot reject this request",
-            )
-
-        request.status = RequestStatus.REJECTED
-        request.processed_at = datetime.now(UTC)
-
-        self.teacher_student_request_repository.update(request)
-
-
+        return request.to_user_id, request.from_user_id
 
 

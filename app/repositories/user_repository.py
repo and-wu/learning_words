@@ -18,7 +18,7 @@ class UserRepository:
     def get_by_email(self, email: str) -> User | None:
         stmt = (
             select(User)
-            .where(User.email == email)
+            .where(User.email == email.lower())
         )
 
         return self.db.scalar(stmt)
@@ -26,7 +26,7 @@ class UserRepository:
     def get_by_login(self, login: str) -> User | None:
         stmt = (
             select(User)
-            .where(User.login == login)
+            .where(User.login == login.lower())
         )
 
         return self.db.scalar(stmt)
