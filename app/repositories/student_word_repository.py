@@ -1,7 +1,7 @@
 from datetime import datetime, UTC
 
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, joinedload
 
 from app.models.student_words import StudentWord
 
@@ -108,3 +108,20 @@ class StudentWordRepository:
         )
 
         return self.db.scalar(stmt) or 0
+
+    # Возвращает все слова конкретного ученика вместе с объектом Word
+    def get_by_student(self, student_id: int) -> list[StudentWord]:
+        stmt = (
+            select(StudentWord)
+            .options(
+                joinedload(StudentWord.word),
+            )
+            .where(
+                StudentWord.student_id == student_id,
+            )
+            .order_by(
+                StudentWord.next_review_at.asc(),
+            )
+        )
+
+        return list(self.db.scalars(stmt).all())

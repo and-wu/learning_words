@@ -101,6 +101,7 @@ def get_teacher_dashboard_service(
 ) -> TeacherDashboardService:
 
     return TeacherDashboardService(
+        user_repository=UserRepository(db),
         teacher_student_repository=TeacherStudentRepository(db),
         student_word_repository=StudentWordRepository(db),
         exercise_result_repository=ExerciseResultRepository(db),

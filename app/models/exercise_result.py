@@ -4,17 +4,16 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     DateTime,
-    Enum as SqlEnum,
+    Enum as SQLEnum,
     ForeignKey,
     String,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Enum as SQLEnum
+
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 from app.enums.exercise_type import ExerciseType
-
 
 
 class ExerciseResult(Base):
@@ -70,3 +69,5 @@ class ExerciseResult(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+    word: Mapped["Word"] = relationship()

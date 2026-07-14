@@ -97,3 +97,17 @@ class TeacherStudentRepository:
 
         return relationship
 
+    # Проверяет, является ли преподаватель наставником ученика
+    def is_teacher_of_student(self, teacher_id: int, student_id: int) -> bool:
+        stmt = (
+            select(TeacherStudents.id)
+            .where(
+                TeacherStudents.teacher_id == teacher_id,
+                TeacherStudents.student_id == student_id,
+                TeacherStudents.is_active.is_(True),
+            )
+            .limit(1)
+        )
+
+        return self.db.scalar(stmt) is not None
+

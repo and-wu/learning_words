@@ -1,5 +1,5 @@
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models import ExerciseResult
 
@@ -100,5 +100,24 @@ class ExerciseResultRepository:
         )
 
         return self.db.scalar(stmt) or 0
+
+    # Возвращает последние ответы ученика
+    def get_last_answer_by_user(self, user_id: int, limit: int = 50) -> list[ExerciseResult]:
+
+        stmt = (
+            select(ExerciseResult)
+            .options(
+                joinedload(ExerciseResult.word),
+            )
+            .where(
+                ExerciseResult.user_id == user_id,
+            )
+            .order_by(
+                ExerciseResult.created_at.desc(),
+            )
+            .limit(limit)
+        )
+
+        return list(self.db.scalars(stmt).all())
 
     
