@@ -2,7 +2,7 @@ from datetime import datetime
 
 import sqlalchemy as sa
 from sqlalchemy import BigInteger, ForeignKey, func, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 from app.enums.request_status import RequestStatus

@@ -24,11 +24,13 @@ class Word(Base):
     korean: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
+        index=True,
     )
 
     translation: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
+        index=True,
     )
 
     part_of_speech: Mapped[str | None] = mapped_column(
@@ -67,4 +69,8 @@ class Word(Base):
     # Все назначения этого слова ученикам
     student_words: Mapped[list["StudentWord"]] = relationship(
         back_populates="word",
+    )
+
+    creator: Mapped["User"] = relationship(
+        foreign_keys=[created_by],
     )

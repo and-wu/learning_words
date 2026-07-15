@@ -25,7 +25,8 @@ class Session(Base):
         ForeignKey(
             "users.id",
             ondelete="CASCADE"),
-        nullable=False
+        nullable=False,
+        index=True,
     )
 
     session_token: Mapped[str] = mapped_column(

@@ -47,6 +47,7 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(
         SQLEnum(
             UserRole,
+            values_callable=lambda enum: [e.value for e in enum],
             name="user_role",
         ),
         nullable=False
@@ -72,5 +73,15 @@ class User(Base):
     sessions: Mapped[list["Session"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+
+    teacher_relationships: Mapped[list["TeacherStudents"]] = relationship(
+        foreign_keys="TeacherStudents.teacher_id",
+        back_populates="teacher",
+    )
+
+    student_relationships: Mapped[list["TeacherStudents"]] = relationship(
+        foreign_keys="TeacherStudents.student_id",
+        back_populates="student",
     )
 

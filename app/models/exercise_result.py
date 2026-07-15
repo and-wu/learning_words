@@ -70,4 +70,10 @@ class ExerciseResult(Base):
         nullable=False,
     )
 
-    word: Mapped["Word"] = relationship()
+    word: Mapped["Word"] = relationship(
+        foreign_keys=[word_id],
+    )
+
+    user: Mapped["User"] = relationship(
+        foreign_keys=[user_id],
+    )

@@ -65,6 +65,7 @@ class StudentWord(Base):
     source_type: Mapped[SourceType] = mapped_column(
         SQLEnum(
             SourceType,
+            values_callable=lambda enum: [e.value for e in enum],
             name="source_type",
         ),
         nullable=False,
@@ -96,6 +97,7 @@ class StudentWord(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+        index=True,
     )
 
     interval_days: Mapped[int] = mapped_column(
@@ -113,4 +115,12 @@ class StudentWord(Base):
     # Связь с таблицей слов
     word: Mapped["Word"] = relationship(
         back_populates="student_words",
+    )
+
+    student: Mapped["User"] = relationship(
+        foreign_keys=[student_id],
+    )
+
+    assigned_by_user: Mapped["User"] = relationship(
+        foreign_keys=[assigned_by],
     )

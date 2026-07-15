@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import BigInteger, ForeignKey, func, DateTime, Boolean, text, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
 
@@ -52,3 +52,12 @@ class TeacherStudents(Base):
         server_default=text("true")
     )
 
+    teacher: Mapped["User"] = relationship(
+        foreign_keys=[teacher_id],
+        back_populates="teacher_relationships",
+    )
+
+    student: Mapped["User"] = relationship(
+        foreign_keys=[student_id],
+        back_populates="student_relationships",
+    )
