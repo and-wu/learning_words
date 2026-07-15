@@ -13,6 +13,7 @@ class StudentWordRepository:
 
     def create(self, student_word: StudentWord) -> StudentWord:
         self.db.add(student_word)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(student_word)
 
@@ -28,29 +29,31 @@ class StudentWordRepository:
 
         return self.db.scalar(stmt)
 
-    def get_student_words(self, student_id: int) -> list[StudentWord]:
-        stmt = (
-            select(StudentWord)
-            .where(
-                StudentWord.student_id == student_id,
-            )
-        )
-
-        return list(self.db.scalars(stmt))
+    # def get_student_words(self, student_id: int) -> list[StudentWord]:
+    #     stmt = (
+    #         select(StudentWord)
+    #         .where(
+    #             StudentWord.student_id == student_id,
+    #         )
+    #     )
+    #
+    #     return list(self.db.scalars(stmt))
 
     def exists(self, student_id: int, word_id: int) -> bool:
         stmt = (
-            select(StudentWord)
+            select(StudentWord.id)
             .where(
                 StudentWord.student_id == student_id,
                 StudentWord.word_id == word_id,
             )
+            .limit(1)
         )
 
         return self.db.scalar(stmt) is not None
 
     def update(self, student_word: StudentWord) -> StudentWord:
         self.db.add(student_word)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(student_word)
 
@@ -121,7 +124,8 @@ class StudentWordRepository:
             )
             .order_by(
                 StudentWord.next_review_at.asc(),
+                StudentWord.id.asc(),
             )
         )
 
-        return list(self.db.scalars(stmt).all())
+        return self.db.scalars(stmt).all()

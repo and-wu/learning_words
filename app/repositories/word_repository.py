@@ -10,6 +10,7 @@ class WordRepository:
 
     def create(self, word: Word) -> Word:
         self.db.add(word)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(word)
 
@@ -37,7 +38,7 @@ class WordRepository:
             .order_by(Word.korean)
         )
 
-        return list(self.db.scalars(stmt))
+        return self.db.scalars(stmt).all()
 
     # Получить случайные слова, кроме текущего
     def get_random_except(self, word_id: int, limit: int) -> list[Word]:
@@ -52,10 +53,11 @@ class WordRepository:
             .limit(limit)
         )
 
-        return list(self.db.scalars(stmt).all())
+        return self.db.scalars(stmt).all()
 
     def update(self, word: Word) -> Word:
-        self.db.add(word)
+
+        self.db.flush()
         self.db.commit()
         self.db.refresh(word)
 

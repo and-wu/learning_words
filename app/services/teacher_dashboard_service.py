@@ -163,7 +163,7 @@ class TeacherDashboardService:
             student_id=student.id,
         )
 
-        history = self.exercise_result_repository.get_last_answer_by_user(
+        history = self.exercise_result_repository.get_recent_answers_by_user(
             user_id=student.id,
         )
 

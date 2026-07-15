@@ -34,7 +34,7 @@ class TeacherStudentService:
 
     def get_teachers(self, current_user: User) -> list[User]:
 
-        relationships = self.teacher_student_repository.get_teachers(
+        relationships = self.teacher_student_repository.get_teacher_relationships(
             student_id=current_user.id,
         )
 

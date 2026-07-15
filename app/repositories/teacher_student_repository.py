@@ -11,24 +11,13 @@ class TeacherStudentRepository:
         self.db = db
 
     def create(self, teacher_student: TeacherStudents) -> TeacherStudents:
+
         self.db.add(teacher_student)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(teacher_student)
 
         return teacher_student
-
-    def exists(self, teacher_id: int, student_id: int) -> bool:
-        stmt = (
-            select(TeacherStudents)
-            .where(
-                TeacherStudents.teacher_id == teacher_id,
-                TeacherStudents.student_id == student_id,
-            )
-        )
-
-        teacher_student = self.db.scalar(stmt)
-
-        return teacher_student is not None
 
     def get_by_users(self, teacher_id: int, student_id: int) -> TeacherStudents | None:
 
@@ -42,9 +31,10 @@ class TeacherStudentRepository:
 
         return self.db.scalar(stmt)
 
-    def get_students(self, teacher_id: int, ) -> list[TeacherStudents]:
+    def get_student_relationships(self, teacher_id: int, ) -> list[TeacherStudents]:
         stmt = (
             select(TeacherStudents)
+
             .where(
                 TeacherStudents.teacher_id == teacher_id,
                 TeacherStudents.is_active.is_(True),
@@ -57,10 +47,7 @@ class TeacherStudentRepository:
     def get_student_users(self, teacher_id: int) -> list[User]:
         stmt = (
             select(User)
-            .join(
-                TeacherStudents,
-                TeacherStudents.student_id == User.id,
-            )
+            .join(User.student_relationships)
             .where(
                 TeacherStudents.teacher_id == teacher_id,
                 TeacherStudents.is_active.is_(True),
@@ -69,7 +56,7 @@ class TeacherStudentRepository:
 
         return self.db.scalars(stmt).all()
 
-    def get_teachers(self, student_id: int) -> list[TeacherStudents]:
+    def get_teacher_relationships(self, student_id: int) -> list[TeacherStudents]:
         stmt = (
             select(TeacherStudents)
             .where(
@@ -92,6 +79,7 @@ class TeacherStudentRepository:
 
     def update(self, relationship: TeacherStudents) -> TeacherStudents:
         self.db.add(relationship)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(relationship)
 

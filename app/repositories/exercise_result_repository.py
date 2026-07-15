@@ -37,7 +37,7 @@ class ExerciseResultRepository:
             )
         )
 
-        return list(self.db.scalars(stmt))
+        return self.db.scalars(stmt).all()
 
     def get_by_word(self, word_id: int) -> list[ExerciseResult]:
         stmt = (
@@ -50,7 +50,7 @@ class ExerciseResultRepository:
             )
         )
 
-        return list(self.db.scalars(stmt))
+        return self.db.scalars(stmt).all()
 
     def get_by_user_and_word(self, user_id: int, word_id: int) -> list[ExerciseResult]:
         stmt = (
@@ -64,7 +64,7 @@ class ExerciseResultRepository:
             )
         )
 
-        return list(self.db.scalars(stmt))
+        return self.db.scalars(stmt).all()
 
     # Возвращает общее количество выполненных упражнений ученика
     def count_by_user(self, user_id: int) -> int:
@@ -102,7 +102,7 @@ class ExerciseResultRepository:
         return self.db.scalar(stmt) or 0
 
     # Возвращает последние ответы ученика
-    def get_last_answer_by_user(self, user_id: int, limit: int = 50) -> list[ExerciseResult]:
+    def get_recent_answers_by_user(self, user_id: int, limit: int = 50) -> list[ExerciseResult]:
 
         stmt = (
             select(ExerciseResult)
@@ -114,10 +114,11 @@ class ExerciseResultRepository:
             )
             .order_by(
                 ExerciseResult.created_at.desc(),
+                ExerciseResult.id.desc(),
             )
             .limit(limit)
         )
 
-        return list(self.db.scalars(stmt).all())
+        return self.db.scalars(stmt).all()
 
     
