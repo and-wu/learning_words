@@ -51,12 +51,9 @@ class StudentStatisticsService:
         if total_answers == 0:
             accuracy = 0
         else:
-            accuracy = round(
-                correct_answers / total_answers * 100,
-                2,
-            )
+            accuracy = self._calculate_accuracy(correct_answers, total_answers)
 
-        return StudentStatisticsResponse(
+        statistics = StudentStatisticsResponse(
             total_words=total_words,
             due_words=due_words,
             total_answers=total_answers,
@@ -64,5 +61,18 @@ class StudentStatisticsService:
             wrong_answers=wrong_answers,
             accuracy=accuracy,
             current_streak=current_streak,
+        )
+
+        return statistics
+
+    # Рассчитывает процент правильных ответов
+    def _calculate_accuracy(self, correct_answers: int, total_answers: int) -> float:
+
+        if total_answers == 0:
+            return 0
+
+        return round(
+            correct_answers / total_answers * 100,
+            2,
         )
 

@@ -56,6 +56,20 @@ class TeacherStudentRepository:
 
         return self.db.scalars(stmt).all()
 
+    # Возвращает пользователей-преподавателей конкретного ученика
+    def get_teacher_users(self, student_id: int) -> list[User]:
+        stmt = (
+            select(User)
+            .join(User.teacher_relationships)
+            .where(
+                TeacherStudents.student_id == student_id,
+                TeacherStudents.is_active.is_(True),
+            )
+            .order_by(User.name)
+        )
+
+        return self.db.scalars(stmt).all()
+
     def get_teacher_relationships(self, student_id: int) -> list[TeacherStudents]:
         stmt = (
             select(TeacherStudents)

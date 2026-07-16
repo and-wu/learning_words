@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.models import TeacherStudents
 from app.models.user import User
 from app.repositories.teacher_student_repository import TeacherStudentRepository
 from app.repositories.user_repository import UserRepository
@@ -15,46 +16,46 @@ class TeacherStudentService:
         self.user_repository = user_repository
         self.teacher_student_repository = teacher_student_repository
 
+    # ==========================================================
+    # Public methods
+    # ==========================================================
 
+    # Возвращает список учеников текущего преподавателя
     def get_students(self, current_user: User) -> list[User]:
 
-        relationships = self.teacher_student_repository.get_students(teacher_id=current_user.id)
+        return self.teacher_student_repository.get_student_users(
+            current_user.id,
+        )
 
-        students = []
-
-        for relationship in relationships:
-            student = self.user_repository.get_by_id(
-                relationship.student_id,
-            )
-
-            if student is not None:
-                students.append(student)
-
-        return students
-
+    # Возвращает список преподавателей текущего ученика
     def get_teachers(self, current_user: User) -> list[User]:
 
-        relationships = self.teacher_student_repository.get_teacher_relationships(
+        return self.teacher_student_repository.get_teacher_users(
             student_id=current_user.id,
         )
 
-        teachers = []
+    # Деактивирует связь преподавателя и ученика
+    def deactivate(self, current_user: User, relationship_id: int) -> None:
 
-        for relationship in relationships:
-            teacher = self.user_repository.get_by_id(
-                relationship.teacher_id,
-            )
+        relationship = self._get_relationship(relationship_id)
 
-            if teacher is not None:
-                teachers.append(teacher)
+        self._validate_can_deactivate(
+            current_user=current_user,
+            relationship=relationship,
+        )
 
-        return teachers
+        relationship.is_active = False
 
-    def deactivate(
-            self,
-            current_user: User,
-            relationship_id: int,
-    ) -> None:
+        self.teacher_student_repository.update(
+            relationship,
+        )
+
+    # ==========================================================
+    # Private methods
+    # ==========================================================
+
+    # Возвращает связь преподавателя и ученика либо выбрасывает 404
+    def _get_relationship( self, relationship_id: int) -> TeacherStudents:
 
         relationship = self.teacher_student_repository.get_by_id(
             relationship_id,
@@ -66,12 +67,19 @@ class TeacherStudentService:
                 detail="Relationship not found",
             )
 
+        return relationship
+
+    # Проверяет возможность деактивации связи
+    def _validate_can_deactivate(self, current_user: User, relationship: TeacherStudents) -> None:
+
+        # Связь уже отключена
         if not relationship.is_active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Relationship is already inactive",
             )
 
+        # Пользователь должен быть участником связи
         if (
                 relationship.teacher_id != current_user.id
                 and relationship.student_id != current_user.id
@@ -80,9 +88,3 @@ class TeacherStudentService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You cannot deactivate this relationship",
             )
-
-        relationship.is_active = False
-
-        self.teacher_student_repository.update(
-            relationship,
-        )

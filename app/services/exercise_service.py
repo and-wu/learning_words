@@ -13,7 +13,6 @@ from app.schemas.exercises import SubmitExerciseRequest
 from app.schemas.next_exercise import NextExerciseResponse
 from app.services.exercises.factory import ExerciseHandlerFactory
 
-
 class ExerciseService:
 
     def __init__(
@@ -28,36 +27,75 @@ class ExerciseService:
         self.word_repository = word_repository
         self.exercise_handler_factory = exercise_handler_factory
 
+    # =====================================================
+    # Public methods
+    # =====================================================
 
-
+    # Возвращает следующее упражнение для текущего ученика
     def get_next_exercise(self, current_user: User) -> NextExerciseResponse:
 
-        # Получаем все слова, которые пора повторить
-        due_words = self.student_word_repository.get_due_words(current_user.id)
+        student_word = self._get_random_due_word(current_user.id)
 
-        # Если повторять нечего
+        exercise_type = self._choose_exercise_type()
+
+        return self._build_exercise(
+            student_word=student_word,
+            exercise_type=exercise_type,
+        )
+
+    # Проверяет ответ ученика, сохраняет результат и обновляет прогресс
+    def submit_answer(self, current_user: User, data: SubmitExerciseRequest) -> ExerciseResult:
+
+        student_word = self._get_student_word(
+            current_user=current_user,
+            student_word_id=data.student_word_id,
+        )
+
+        word = self._get_word(student_word.word_id)
+
+        correct = self._check_answer(
+            word=word,
+            data=data,
+        )
+
+        result = self._create_exercise_result(
+            current_user=current_user,
+            word=word,
+            data=data,
+            correct=correct,
+        )
+
+        self._update_student_progress(
+            student_word=student_word,
+            correct=correct,
+        )
+
+        return result
+
+    # =====================================================
+    # Exercise building
+    # =====================================================
+
+    # Возвращает случайное слово ученика, которое пора повторять
+    def _get_random_due_word(self, student_id: int) -> StudentWord:
+
+        due_words = self.student_word_repository.get_due_words(student_id)
+
         if not due_words:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No words available for review",
             )
 
-        # Выбираем случайное слово
-        student_word = choice(due_words)
+        return choice(due_words)
 
-        # Выбираем тип упражнения
-        exercise_type = self._choose_exercise_type()
+    # Формирует готовое упражнение для выбранного слова
+    def _build_exercise(self, student_word: StudentWord, exercise_type: ExerciseType) -> NextExerciseResponse:
 
-        # Получаем обработчик конкретного упражнения
         handler = self.exercise_handler_factory.get_handler(exercise_type)
 
-        # Формируем содержимое упражнения
-        content = handler.build(
-            student_word.word,
-        )
+        content = handler.build(student_word.word)
 
-
-        # Возвращаем упражнение
         return NextExerciseResponse(
             student_word_id=student_word.id,
             exercise_type=exercise_type,
@@ -65,52 +103,35 @@ class ExerciseService:
             options=content.options,
         )
 
-    def submit_answer(self, current_user: User, data: SubmitExerciseRequest) -> ExerciseResult:
+    # Проверяет правильность ответа ученика
+    def _check_answer(self, word: Word, data: SubmitExerciseRequest,) -> bool:
 
-        # Получаем слово ученика по идентификатору
-        student_word = self._get_student_word(
-            current_user=current_user,
-            student_word_id=data.student_word_id,
-        )
-
-        # Получаем слово из словаря ученика
-        word = self._get_word(student_word.word_id)
-
-        # Получаем обработчик упражнения
         handler = self.exercise_handler_factory.get_handler(
             data.exercise_type,
         )
 
-        # Проверяем правильность ответа ученика
-        correct = handler.check(word=word, data=data,)
-
-        # Сохраняем результат упражнения в историю
-        exercise_result = self._create_exercise_result(
-            current_user=current_user,
+        return handler.check(
             word=word,
             data=data,
-            correct=correct,
         )
 
-        # Обновляем прогресс после правильного ответа
-        self._update_student_progress(student_word=student_word, correct=correct)
+    # =====================================================
+    # Entity loading
+    # =====================================================
 
-        return exercise_result
-
-    # Получает слово ученика и проверяет право доступа
+    # Возвращает запись StudentWord и проверяет право доступа ученика
     def _get_student_word(self, current_user: User, student_word_id: int) -> StudentWord:
 
-        # Получаем слово ученика по идентификатору
-        student_word = self.student_word_repository.get_by_id(student_word_id)
+        student_word = self.student_word_repository.get_by_id(
+            student_word_id,
+        )
 
-        # Проверяем, что слово существует
         if student_word is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Student word not found",
             )
 
-        # Проверяем, что слово принадлежит текущему ученику
         if student_word.student_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -119,12 +140,11 @@ class ExerciseService:
 
         return student_word
 
-    # Получаем слово из словаря ученика
+    # Возвращает слово из словаря или выбрасывает ошибку 404
     def _get_word(self, word_id: int) -> Word:
-        # Получаем слово, связанное с записью ученика
+
         word = self.word_repository.get_by_id(word_id)
 
-        # Проверяем, что слово существует
         if word is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -133,47 +153,20 @@ class ExerciseService:
 
         return word
 
-    # # Проверяет правильность ответа ученика
-    # def _check_answer(self, word: Word, data: SubmitExerciseRequest) -> bool:
-    #
-    #     # Подготавливаем ответ ученика
-    #     response = data.response.strip()
-    #
-    #     # Проверяем упражнения, где ответом является русский перевод
-    #     if data.exercise_type in (
-    #             ExerciseType.KO_TO_RU,
-    #             ExerciseType.MATCH,
-    #     ):
-    #         return (
-    #                 response.lower()
-    #                 ==
-    #                 word.translation.strip().lower()
-    #         )
-    #
-    #     # Проверяем упражнение "Русский → Корейский"
-    #     if data.exercise_type == ExerciseType.RU_TO_KO:
-    #         return (
-    #                 response
-    #                 ==
-    #                 word.korean.strip()
-    #         )
-    #
-    #     # Остальные упражнения пока не реализованы
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail=f"Exercise type '{data.exercise_type.value}' is not supported yet",
-    #     )
+    # =====================================================
+    # Exercise results
+    # =====================================================
 
-    # Создает запись о результате выполнения упражнения
+    # Создает запись о выполненном упражнении
     def _create_exercise_result(
-            self,
-            current_user: User,
-            word: Word,
-            data: SubmitExerciseRequest,
-            correct: bool,
+        self,
+        current_user: User,
+        word: Word,
+        data: SubmitExerciseRequest,
+        correct: bool,
     ) -> ExerciseResult:
 
-        exercise_result = ExerciseResult(
+        result = ExerciseResult(
             user_id=current_user.id,
             word_id=word.id,
             exercise_type=data.exercise_type,
@@ -181,113 +174,73 @@ class ExerciseService:
             response=data.response,
         )
 
-        return self.exercise_result_repository.create(
-            exercise_result,
-        )
+        return self.exercise_result_repository.create(result)
 
-    # функция обновления прогресса
+    # =====================================================
+    # Progress
+    # =====================================================
+
+    # Обновляет статистику изучения слова после выполнения упражнения
     def _update_student_progress(self, student_word: StudentWord, correct: bool) -> None:
 
-        # Обновляем статистику в зависимости от результата ответа
         if correct:
-
-            student_word.correct_streak += 1
-
-            student_word.interval_days = (
-                self._calculate_interval_days(
-                    student_word.correct_streak,
-                )
-            )
-
+            self._apply_correct_answer(student_word)
         else:
+            self._apply_wrong_answer(student_word)
 
-            student_word.wrong_count += 1
-
-            student_word.correct_streak = 0
-
-            student_word.interval_days = 1
-
-        # Сохраняем время последнего повторения
         student_word.last_review_at = datetime.now(UTC)
 
-        # Рассчитываем дату следующего повторения
         student_word.next_review_at = (
-                student_word.last_review_at
-                + timedelta(days=student_word.interval_days)
+            student_word.last_review_at
+            + timedelta(days=student_word.interval_days)
         )
 
-        # Записываем изменения в базу данных
         self.student_word_repository.update(student_word)
 
-    # функция вычисления интервала
-    def _calculate_interval_days(self, correct_streak: int) -> int:
+    # Обновляет прогресс после правильного ответа
+    def _apply_correct_answer(
+        self,
+        student_word: StudentWord,
+    ) -> None:
 
-        if correct_streak <= 1:
+        student_word.correct_streak += 1
+
+        student_word.interval_days = self._calculate_interval_days(
+            student_word.correct_streak,
+        )
+
+    # Обновляет прогресс после неправильного ответа
+    def _apply_wrong_answer(self, student_word: StudentWord) -> None:
+
+        student_word.wrong_count += 1
+        student_word.correct_streak = 0
+        student_word.interval_days = 1
+
+    # Рассчитывает следующий интервал повторения
+    def _calculate_interval_days(self, streak: int) -> int:
+
+        if streak <= 1:
             return 1
 
-        if correct_streak == 2:
+        if streak == 2:
             return 3
 
-        if correct_streak == 3:
+        if streak == 3:
             return 7
 
         return 14
 
+    # =====================================================
+    # Helpers
+    # =====================================================
+
+    # Выбирает случайный тип упражнения
     def _choose_exercise_type(self) -> ExerciseType:
 
         return choice(
-            [
+            (
                 ExerciseType.KO_TO_RU,
                 ExerciseType.RU_TO_KO,
-                ExerciseType.MATCH
-            ]
+                ExerciseType.MATCH,
+            )
         )
-
-    # # Сформировать вопрос для упражнения
-    # def _build_question(self, word: Word, exercise_type: ExerciseType) -> ExerciseContent:
-    #
-    #     # Корейское слово → нужно выбрать русский перевод
-    #     if exercise_type == ExerciseType.KO_TO_RU:
-    #         return ExerciseContent(
-    #             question=word.korean,
-    #         )
-    #
-    #     # Русский перевод → нужно написать корейское слово
-    #     if exercise_type == ExerciseType.RU_TO_KO:
-    #         return ExerciseContent(
-    #             question=word.translation,
-    #         )
-    #
-    #     # Выбрать правильный перевод из нескольких вариантов
-    #     if exercise_type == ExerciseType.MATCH:
-    #         return ExerciseContent(
-    #             question=word.korean,
-    #             options=self._build_options(word),
-    #         )
-    #
-    #     raise ValueError(
-    #             f"Unsupported exercise type: {exercise_type}"
-    #         )
-    #
-    # # Сформировать варианты ответа для упражнения Match
-    # def _build_options(self, word: Word) -> list[str]:
-    #
-    #     # Получаем три случайных неправильных слова
-    #     random_words = self.word_repository.get_random_except(
-    #         word_id=word.id,
-    #         limit=3,
-    #     )
-    #
-    #     # Добавляем правильный ответ
-    #     options = [word.translation]
-    #
-    #     # Добавляем неправильные варианты
-    #     options.extend(
-    #         random_word.translation
-    #         for random_word in random_words
-    #     )
-    #
-    #     # Перемешиваем варианты
-    #     shuffle(options)
-    #
-    #     return options
