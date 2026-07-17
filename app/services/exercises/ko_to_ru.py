@@ -16,9 +16,7 @@ class KoToRuExerciseHandler(BaseExerciseHandler):
 
 
     def check(self, word: Word,data: SubmitExerciseRequest) -> bool:
+        answer = data.response.strip().lower()
+        correct = word.translation.strip().lower()
 
-        return (
-            data.response.strip().lower()
-            ==
-            word.translation.strip().lower()
-        )
+        return answer == correct

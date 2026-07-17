@@ -8,7 +8,7 @@ from app.schemas.exercises import SubmitExerciseRequest
 class AssembleSentenceExerciseHandler:
 
     # Формирует упражнение
-    def build(self, word: Word,) -> ExerciseContent:
+    def build(self, word: Word) -> ExerciseContent:
 
         ...
 

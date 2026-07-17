@@ -5,11 +5,12 @@ from app.schemas.exercise_types import ExerciseContent
 from app.schemas.exercises import SubmitExerciseRequest
 
 from .base import BaseExerciseHandler
+from ...repositories.word_repository import WordRepository
 
 
 class MatchExerciseHandler(BaseExerciseHandler):
 
-    def __init__(self, word_repository):
+    def __init__(self, word_repository: WordRepository):
         self.word_repository = word_repository
 
 
