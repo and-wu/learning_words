@@ -9,6 +9,7 @@ from app.config import settings
 engine = create_engine(
     settings.DATABASE_URL,
     echo=False,
+    pool_pre_ping=True,
 )
 
 SessionLocal = sessionmaker(
@@ -18,9 +19,9 @@ SessionLocal = sessionmaker(
 )
 
 def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
+    session = SessionLocal()
 
     try:
-        yield db
+        yield session
     finally:
-        db.close()
+        session.close()

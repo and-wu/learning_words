@@ -100,7 +100,7 @@ class StudentWordService:
     # Проверяет, что пользователь является преподавателем
     def _ensure_teacher(self, user: User) -> None:
 
-        if user.role != UserRole.teacher:
+        if user.role != UserRole.TEACHER:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only teachers can assign words",
@@ -109,7 +109,7 @@ class StudentWordService:
     # Проверяет, что пользователь является учеником
     def _ensure_student(self, user: User) -> None:
 
-        if user.role != UserRole.student:
+        if user.role != UserRole.STUDENT:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only students can perform this action",
@@ -126,7 +126,7 @@ class StudentWordService:
                 detail="Student not found",
             )
 
-        if student.role != UserRole.student:
+        if student.role != UserRole.STUDENT:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User is not a student",
@@ -215,7 +215,7 @@ class StudentWordService:
             )
 
         if (
-            current_user.role == UserRole.teacher
+            current_user.role == UserRole.TEACHER
             and student_word.source_type != SourceType.TEACHER
         ):
             raise HTTPException(

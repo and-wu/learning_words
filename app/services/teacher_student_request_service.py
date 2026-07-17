@@ -181,13 +181,13 @@ class TeacherStudentRequestService:
 
         if request_type == RequestType.TEACHER_TO_STUDENT:
 
-            if current_user.role != UserRole.teacher:
+            if current_user.role != UserRole.TEACHER:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Only teachers can send this request",
                 )
 
-            if target_user.role != UserRole.student:
+            if target_user.role != UserRole.STUDENT:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Target user must be a student",
@@ -195,13 +195,13 @@ class TeacherStudentRequestService:
 
         else:
 
-            if current_user.role != UserRole.student:
+            if current_user.role != UserRole.STUDENT:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Only students can send this request",
                 )
 
-            if target_user.role != UserRole.teacher:
+            if target_user.role != UserRole.TEACHER:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Target user must be a teacher",
