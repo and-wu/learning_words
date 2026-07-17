@@ -68,9 +68,7 @@ def get_teacher_student_request_service(
         teacher_student_request_repository=TeacherStudentRequestRepository(db),
     )
 
-def get_exercise_service(
-    db: Session = Depends(get_db),
-):
+def get_exercise_service(db: Session = Depends(get_db)) -> ExerciseService:
 
     word_repository = WordRepository(db)
 
