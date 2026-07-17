@@ -1,18 +1,17 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums.source_type import SourceType
 
 
 class AssignWordRequest(BaseModel):
-    student_id: int
-    word_id: int
+    student_id: int = Field(gt=0)
+    word_id: int = Field(gt=0)
 
 
 class SelfAssignWordRequest(BaseModel):
-    word_id: int
-
+    word_id: int = Field(gt=0)
 
 class StudentWordResponse(BaseModel):
     id: int

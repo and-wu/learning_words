@@ -1,14 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StudentStatisticsResponse(BaseModel):
-    total_words: int
-    due_words: int
+    total_words: int = Field(ge=0)
+    due_words: int = Field(ge=0)
 
-    total_answers: int
-    correct_answers: int
-    wrong_answers: int
+    total_answers: int = Field(ge=0)
+    correct_answers: int = Field(ge=0)
+    wrong_answers: int = Field(ge=0)
 
-    accuracy: float
+    accuracy: float = Field(ge=0, le=100)
 
-    current_streak: int
+    current_streak: int = Field(ge=0)
