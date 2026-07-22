@@ -7,20 +7,39 @@ from app.enums.user_role import UserRole
 from app.models.session import Session
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
-from app.schemas.auth import LoginRequest
+from app.schemas.auth import LoginRequest, RegisterRequest
 from app.services.auth_service import AuthService
 
 
 class FakeUserRepository:
 
-    def __init__(self, user: User):
+    def __init__(self, user: User | None = None):
         self.user = user
+        self.created_user: User | None = None
 
     def get_by_login(self, login: str) -> User | None:
-        if login == self.user.login:
-            return self.user
+        users = [self.user, self.created_user]
+
+        for user in users:
+            if user is not None and user.login == login:
+                return user
 
         return None
+
+    def get_by_email(self, email: str) -> User | None:
+        users = [self.user, self.created_user]
+
+        for user in users:
+            if user is not None and user.email == email:
+                return user
+
+        return None
+
+    def create(self, user: User) -> User:
+        self.created_user = user
+
+        return user
+
 
 
 class FakeSessionRepository:
@@ -51,18 +70,31 @@ def user_repository(user: User) -> FakeUserRepository:
     return FakeUserRepository(user)
 
 @pytest.fixture
+def empty_user_repository() -> FakeUserRepository:
+
+    return FakeUserRepository()
+
+@pytest.fixture
 def session_repository() -> FakeSessionRepository:
 
     return FakeSessionRepository()
 
 @pytest.fixture
 def service(
-        user_repository: UserRepository,
+        user_repository: FakeUserRepository,
         session_repository: FakeSessionRepository) -> AuthService:
 
     return AuthService(user_repository=user_repository,
                        session_repository=session_repository)
 
+@pytest.fixture
+def registration_service(
+    empty_user_repository: FakeUserRepository,
+    session_repository: FakeSessionRepository,
+) -> AuthService:
+
+    return AuthService(user_repository=empty_user_repository,
+                       session_repository=session_repository)
 
 # тест на правильный пароль
 @patch(
@@ -149,3 +181,39 @@ def test_login_with_unknown_login_raises_401(
     assert exception.value.detail == "Invalid login or password"
 
     assert session_repository.created_session is None
+
+# тест для проверки регистрации
+@patch(
+    "app.services.auth_service.PasswordService.hash_password",
+    return_value="hashed_password",
+)
+def test_register_creates_user(
+    mock_hash_password,
+    registration_service: AuthService,
+    empty_user_repository: FakeUserRepository
+):
+    data = RegisterRequest(
+        email="STUDENT@EXAMPLE.COM",
+        login="student",
+        name="Student",
+        password="password123",
+        role=UserRole.STUDENT,
+    )
+
+    user = registration_service.register(data)
+
+    assert user is empty_user_repository.created_user
+
+    assert user.email == "student@example.com"
+
+    assert user.login == "student"
+
+    assert user.name == "Student"
+
+    assert user.password_hash == "hashed_password"
+
+    assert user.role == UserRole.STUDENT
+
+    mock_hash_password.assert_called_once_with(
+        "password123",
+    )
