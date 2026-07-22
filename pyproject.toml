@@ -7,6 +7,12 @@ dependencies = [
     "bcrypt>=5.0.0",
     "pydantic-settings>=2.14.2",
     "pydantic[email]>=2.13.4",
-    "sa>=0.0.4",
     "sqlalchemy>=2.0.51",
+    "psycopg[binary]>=3.2.0",
+    "uvicorn[standard]>=0.34.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
 ]

@@ -36,7 +36,7 @@ class AuthService:
         return self._create_user(data)
 
     # Выход пользователя
-    def logout(self, session_token: str,) -> None:
+    def logout(self, session_token: str | None) -> None:
 
         session = self._get_session(session_token)
 
@@ -120,6 +120,14 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Not authenticated",
+            )
+
+        if session.expires_at <= datetime.now(UTC):
+            self.session_repository.delete(session)
+
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session expired",
             )
 
         return session
