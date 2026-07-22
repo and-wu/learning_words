@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status
 
-from app.dependencies.auth import get_current_user
+from app.dependencies.roles import get_current_student
 from app.dependencies.services import get_student_statistics_service
 from app.models.user import User
 from app.schemas.statistics import StudentStatisticsResponse
@@ -19,7 +19,7 @@ router = APIRouter(
     summary="Get current student statistics",
 )
 def get_statistics(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_student),
     service: StudentStatisticsService = Depends(
         get_student_statistics_service,
     ),

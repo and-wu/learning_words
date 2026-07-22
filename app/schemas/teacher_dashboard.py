@@ -23,7 +23,7 @@ class StudentWordProgressResponse(BaseModel):
     translation: str
     correct_streak: int = Field(ge=0)
     wrong_count: int = Field(ge=0)
-    interval_days: int = Field(ge=1)
+    interval_days: int = Field(ge=0)
     last_review_at: datetime | None
     next_review_at: datetime | None
 
