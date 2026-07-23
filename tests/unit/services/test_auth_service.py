@@ -263,7 +263,7 @@ def test_register_creates_user(
         "password123",
     )
 
-#тест на проверку регистрации с уже существующем email
+# тест на проверку регистрации с уже существующем email
 def test_register_with_existing_email_raises_409(
     service: AuthService,
     user_repository: FakeUserRepository,
@@ -285,7 +285,7 @@ def test_register_with_existing_email_raises_409(
 
     assert user_repository.created_user is None
 
-#тест на проверку регистрации с уже существующем login
+# тест на проверку регистрации с уже существующем login
 def test_register_with_existing_login_raises_409(
     service: AuthService,
     user_repository: FakeUserRepository,
