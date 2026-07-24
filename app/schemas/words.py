@@ -27,9 +27,11 @@ class CreateWordRequest(BaseModel):
 class UpdateWordRequest(BaseModel):
     korean: str | None = Field(
         default=None,
+        min_length=1,
         max_length=100,
     )
     translation: str = Field(
+        default=None,
         min_length=1,
         max_length=255,
     )

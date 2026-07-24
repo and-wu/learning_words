@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from app.enums.user_role import UserRole
 from app.models.session import Session
 from app.models.user import User
-from app.repositories.user_repository import UserRepository
 from app.schemas.auth import LoginRequest, RegisterRequest
 from app.services.auth_service import AuthService
 
